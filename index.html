@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Are You a Bad Boss? 🤔 Take the Quiz!</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Tailwind Configuration (if needed, otherwise rely on default) */
+        /* This section can be used to extend Tailwind's default theme */
+        :root {
+            --primary: #36069A;
+            --secondary: #DE6399;
+            --dark: #020C28;
+            --white: #FFFFFF;
+            --light-gray: #F8F9FA;
+            --body-text: #212529;
+            --muted-text: #6C757D;
+            --border-gray: #ADB5BD;
+            
+            /* Fun Quiz Colors */
+            --quiz-bg-start: #667eea;
+            --quiz-bg-end: #764ba2;
+            --good-boss-bg-start: #11998e;
+            --good-boss-bg-end: #38ef7d;
+            --card-shadow-color: rgba(0, 0, 0, 0.2);
+            --hover-shadow-color: rgba(0, 0, 0, 0.3);
+            --success-green: #10B981;
+            --focus-outline: #36069A;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--body-text);
+            background: linear-gradient(135deg, var(--quiz-bg-start) 0%, var(--quiz-bg-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* Accessibility Features */
+        *:focus {
+            outline: 3px solid var(--focus-outline);
+            outline-offset: 2px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Screen Transitions */
+        .screen {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Progress Bar Shimmer */
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        /* Answer Option Hover Effect */
+        .answer-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .answer-option:hover::before {
+            left: 100%;
+        }
+
+        /* Select Pulse Animation */
+        @keyframes selectPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .answer-option.selected {
+            animation: selectPulse 0.3s ease;
+        }
+
+        /* Boss Type Card Background Animation */
+        .boss-type-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+                animation: none !important;
+            }
+
+            .progress-fill::after,
+            .boss-type-card::before {
+                animation: none !important;
+            }
+        }
+
+        /* Toast styles */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-green);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Accordion specific styles for individual archetypes */
+        .archetype-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            padding-top: 0; /* No padding when collapsed */
+            padding-bottom: 0; /* No padding when collapsed */
+        }
+        .archetype-accordion-content.expanded {
+            max-height: 1000px; /* A large enough value to accommodate content */
+            padding-top: 1rem; /* Add padding when expanded */
+            padding-bottom: 1rem; /* Add padding when expanded */
+        }
+        .accordion-header .accordion-icon {
+            transform: rotate(0deg);
+            transition: transform 0.2s ease-in-out;
+        }
+        .accordion-header.expanded .accordion-icon {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="font-inter">
+    <div class="container w-full max-w-4xl mx-auto px-4 py-8 min-h-screen flex flex-col justify-center items-center">
+        <!-- Landing Screen -->
+        <div id="landing" class="screen active w-full">
+            <div class="bg-white rounded-3xl p-8 shadow-2xl mb-4 transition-all duration-300 hover:shadow-3xl hover:-translate-y-1">
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl font-extrabold mb-2 bg-gradient-to-r from-purple-700 to-pink-500 text-transparent bg-clip-text">
+                        Are YOU a Bad Boss? 🤔
+                    </h1>
+                    <p class="text-xl text-gray-600 mb-4">Take our 2-minute quiz for honest self-reflection!</p>
+                    <div class="bg-blue-50 bg-opacity-70 p-6 rounded-xl text-gray-800 text-lg">
+                        <strong>🎯 Discover if you're a Credit Shark, Micromanager, Ghost Boss, or one of 9 other types!</strong>
+                        <br><br><span class="text-gray-500 italic">🔀 Questions are randomized each time for a fresh perspective.</span>
+                        <br>Get personalized tips to become a truly great leader.
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-8 text-center text-white">
+                    <div class="bg-purple-600 bg-opacity-80 p-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-105">
+                        <span class="block text-4xl font-extrabold mb-1">89%</span>
+                        <span class="text-sm opacity-90">of employees have had a bad boss</span>
+                    </div>
+                    <div class="bg-pink-500 bg-opacity-80 p-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-105">
+                        <span class="block text-4xl font-extrabold mb-1">2 min</span>
+                        <span class="text-sm opacity-90">randomized quiz</span>
+                    </div>
+                    <div class="bg-indigo-600 bg-opacity-80 p-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-105">
+                        <span class="block text-4xl font-extrabold mb-1">12</span>
+                        <span class="text-sm opacity-90">boss archetypes</span>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button class="btn btn-primary bg-gradient-to-r from-purple-700 to-pink-500 text-white px-8 py-4 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center mx-auto" id="start-quiz">
+                        🚀 Start Self-Assessment
+                    </button>
+                    <p class="mt-4 text-sm text-gray-400">
+                        Join leaders committed to continuous improvement.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Questions -->
+        <div id="quiz" class="screen w-full">
+            <div class="bg-white rounded-3xl p-8 shadow-2xl mb-4">
+                <div class="mb-8">
+                    <div class="flex justify-between items-end mb-2 text-gray-600 text-sm">
+                        <span>Question <span id="current-question">1</span> of 8</span>
+                        <span id="progress-percent">12%</span>
+                    </div>
+                    <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="progress-fill h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full relative" id="progress-fill" style="width: 12%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-8" id="question-container">
+                    <!-- Added 'question-number' class here to match JavaScript selector -->
+                    <div class="question-number flex items-center gap-2 mb-2 text-pink-500 font-semibold text-sm">
+                        <span>💼</span>
+                        <span>Credit & Recognition</span>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-6 text-gray-900 leading-tight" id="question-title">
+                        When my team succeeds, what do I typically do?
+                    </h2>
+
+                    <div class="flex flex-col gap-4" id="answer-options">
+                        <!-- Answers will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="flex gap-4 justify-center mt-8">
+                    <button class="btn btn-share bg-white text-purple-700 border-2 border-purple-700 px-6 py-3 rounded-full font-semibold text-lg hover:bg-purple-700 hover:text-white transition-all duration-300 flex items-center justify-center" id="back-btn">← Previous</button>
+                    <!-- Removed the "Continue" button as per user request -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results" class="screen w-full">
+            <div class="bg-white rounded-3xl p-8 shadow-2xl mb-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-extrabold mb-4 text-gray-900">Your Leadership Archetype! 🎉</h2>
+                </div>
+
+                <!-- Main Result Card - Now appears first -->
+                <div class="boss-type-card bg-gradient-to-br from-purple-600 to-indigo-800 text-white rounded-3xl p-8 text-center mb-8 relative overflow-hidden shadow-xl" id="boss-result-card">
+                    <div class="relative z-10">
+                        <span class="block text-7xl mb-4" id="boss-emoji">🦈</span>
+                        <h3 class="text-4xl font-extrabold mb-2" id="boss-name">You might be a CREDIT SHARK</h3>
+                        <p class="text-xl opacity-90 italic mb-6" id="boss-tagline">"I might be stealing credit faster than my team can finish work!"</p>
+                        
+                        <div class="flex justify-center items-center gap-2 mb-4">
+                            <span>Impact on Team:</span>
+                            <span class="text-yellow-400 text-2xl" id="difficulty-stars">⭐⭐⭐⭐⭐</span>
+                        </div>
+                        
+                        <p class="text-lg opacity-90 leading-relaxed" id="boss-description">
+                            If you're a Credit Shark, you systematically take credit for your team's work and ideas. You present their projects as your own and steal recognition faster than a shark smells blood in the water. This erodes trust and demotivates your team.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Tips Section - Now appears directly after the main result card -->
+                <div class="bg-white rounded-2xl p-6 shadow-md mb-8">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+                        <span>🛠️</span>
+                        <span id="tips-boss-name">How to Improve if you are a Credit Shark</span>
+                    </h3>
+
+                    <div class="mb-6">
+                        <h4 class="text-xl font-semibold mb-3 text-purple-700 flex items-center gap-2">⚡ Immediate Actions:</h4>
+                        <ul class="list-none p-0" id="immediate-tips">
+                            <!-- Will be populated by JavaScript -->
+                        </ul>
+                    </div>
+
+                    <div class="mb-6">
+                        <h4 class="text-xl font-semibold mb-3 text-purple-700 flex items-center gap-2">🏗️ Long-term Strategies:</h4>
+                        <ul class="list-none p-0" id="longterm-tips">
+                            <!-- Will be populated by JavaScript -->
+                        </ul>
+                    </div>
+
+                    <div class="bg-red-50 border-2 border-red-300 rounded-xl p-5 mt-6">
+                        <h4 class="text-red-700 font-bold text-lg mb-2">🚨 Red Flags (Time for serious change):</h4>
+                        <p class="text-red-900 text-sm" id="red-alert-text">
+                            <!-- Will be populated by JavaScript -->
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Share Section - Moved after tips but before gallery -->
+                <div class="bg-gray-50 rounded-2xl p-6 text-center mb-8 shadow-md">
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-800">📱 Share Your Leadership Insight!</h3>
+                    <div class="flex gap-4 justify-center flex-wrap mb-4">
+                        <button class="share-btn linkedin bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center gap-2" onclick="shareToLinkedIn()">
+                            💼 LinkedIn
+                        </button>
+                        <button class="share-btn twitter bg-blue-400 text-white px-5 py-2 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center gap-2" onclick="shareToTwitter()">
+                            🐦 Twitter
+                        </button>
+                        <button class="share-btn instagram bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 text-white px-5 py-2 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center gap-2" onclick="shareToInstagram()">
+                            📸 Instagram
+                        </button>
+                        <button class="share-btn copy-link bg-white border-2 border-gray-300 text-gray-700 px-5 py-2 rounded-xl font-semibold hover:bg-gray-100 transition-all duration-300 flex items-center gap-2" onclick="copyLink()">
+                            🔗 Copy Link
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500">
+                        Encourage other leaders to take the quiz! 😄
+                    </p>
+                </div>
+
+                <!-- Boss Types Gallery - Now full-width accordions -->
+                <div class="bg-white rounded-2xl p-6 shadow-md mb-8">
+                    <h3 class="text-2xl font-bold mb-2 text-gray-900 text-center">All 12 Leadership Archetypes</h3>
+                    <p class="text-center text-gray-600 mb-6">Click on an archetype to learn more about its impact and how to improve.</p>
+                    <div class="flex flex-col gap-4" id="boss-types-accordion-container">
+                        <!-- Individual archetype accordions will be populated here by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button class="btn btn-secondary bg-pink-500 text-white px-8 py-4 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center" onclick="retakeQuiz()">
+                        🔄 Retake Quiz
+                    </button>
+                    <button class="btn btn-share bg-white border-2 border-purple-700 text-purple-700 px-6 py-3 rounded-full font-semibold text-lg hover:bg-purple-700 hover:text-white transition-all duration-300 flex items-center justify-center" onclick="emailToFriend()">
+                        📧 Email to Colleague
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-gray-300 text-sm">
+            <p>Created with ❤️ by Design Lady LLC | Helping leaders foster better workplaces</p>
+        </div>
+    </div>
+
+    <!-- Toast for notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Quiz data and logic
+        const questions = [
+            {
+                category: "💼 Credit & Recognition",
+                question: "When my team succeeds, what do I typically do?",
+                answers: [
+                    { emoji: "🎉", text: "I celebrate the team and give specific credit.", desc: "I acknowledge individual contributions and share the spotlight.", points: { good: 3 } },
+                    { emoji: "🦈", text: "I take credit as the visionary leader.", desc: "I present team accomplishments as my leadership success.", points: { creditShark: 3, narcissist: 1 } },
+                    { emoji: "🌋", text: "I find something wrong with the success.", desc: "\"Good, but you should have done X differently\" is my typical response.", points: { volcano: 3, micromanager: 1 } },
+                    { emoji: "👻", text: "I disappear until it's time for recognition.", desc: "I'm absent during the work, but present for the praise.", points: { ghost: 3, creditShark: 1 } }
+                ]
+            },
+            {
+                category: "🗣️ Communication Style",
+                question: "How do I typically communicate important information to my team?",
+                answers: [
+                    { emoji: "📢", text: "Clear, consistent messaging to everyone.", desc: "Information flows transparently across the team.", points: { good: 3 } },
+                    { emoji: "🎭", text: "Different stories to different people.", desc: "The story changes depending on who I'm talking to.", points: { chaosCreator: 3, gaslighter: 1 } },
+                    { emoji: "🌪️", text: "I deny I ever said what they clearly remember.", desc: "\"I never said that\" is my favorite phrase.", points: { gaslighter: 3 } },
+                    { emoji: "👑", text: "Through my favorites only.", desc: "Information flows through the chosen few.", points: { favoritism: 3, boundaryBulldozer: 1 } }
+                ]
+            },
+            {
+                category: "🔍 Work Autonomy",
+                question: "How much freedom do I give my team in their daily work?",
+                answers: [
+                    { emoji: "🕊️", text: "Complete freedom to manage their projects.", desc: "I trust them to make decisions and execute independently.", points: { good: 3 } },
+                    { emoji: "🔍", text: "Every task needs my approval first.", desc: "They can't make a move without my permission.", points: { micromanager: 3 } },
+                    { emoji: "🎲", text: "Freedom until I randomly change everything.", desc: "Autonomy depends on my current mood.", points: { moodDice: 3, chaosCreator: 1 } },
+                    { emoji: "🪞", text: "Freedom in areas I don't care about.", desc: "It only matters if it affects my image.", points: { narcissist: 3, opportunityHoarder: 1 } }
+                ]
+            },
+            {
+                category: "⚠️ Mistake Handling",
+                question: "When something goes wrong, I typically...",
+                answers: [
+                    { emoji: "🤝", text: "Take responsibility and find solutions.", desc: "I focus on fixing problems, not assigning blame.", points: { good: 3 } },
+                    { emoji: "🛡️", text: "Find someone on the team to blame.", desc: "Nothing is ever my fault.", points: { blameDeflector: 3 } },
+                    { emoji: "🌋", text: "Explode and demand answers.", desc: "Volcanic eruption followed by frantic finger-pointing.", points: { volcano: 3 } },
+                    { emoji: "👻", text: "Pretend I wasn't involved.", desc: "I suddenly become invisible when problems arise.", points: { ghost: 3, blameDeflector: 1 } }
+                ]
+            },
+            {
+                category: "🚧 Professional Boundaries",
+                question: "My approach to my team's work-life boundaries is...",
+                answers: [
+                    { emoji: "⚖️", text: "Respectful of their personal time and space.", desc: "I understand the importance of work-life balance.", points: { good: 3 } },
+                    { emoji: "🚧", text: "What boundaries? We're family!", desc: "Personal space and privacy are foreign concepts.", points: { boundaryBulldozer: 3 } },
+                    { emoji: "🎲", text: "It depends on my mood that day.", desc: "Boundaries exist when I feel like respecting them.", points: { moodDice: 3, boundaryBulldozer: 1 } },
+                    { emoji: "👑", text: "Rules for them, not for me.", desc: "Different standards apply to different people.", points: { favoritism: 3, narcissist: 1 } }
+                ]
+            },
+            {
+                category: "🚀 Career Development",
+                question: "When my team asks about growth opportunities, I...",
+                answers: [
+                    { emoji: "📈", text: "Help them create a development plan.", desc: "I'm invested in their professional growth.", points: { good: 3 } },
+                    { emoji: "🔒", text: "\"You're not ready yet\" (forever).", desc: "There's always another requirement they haven't met.", points: { opportunityHoarder: 3 } },
+                    { emoji: "🪞", text: "Make it about my own journey.", desc: "Somehow it becomes a story about my career.", points: { narcissist: 3 } },
+                    { emoji: "👻", text: "Promise to get back to them (spoiler: I don't).", desc: "I vanish whenever career conversations come up.", points: { ghost: 3, opportunityHoarder: 1 } }
+                ]
+            },
+            {
+                category: "💬 Meeting Behavior",
+                question: "In team meetings, I typically...",
+                answers: [
+                    { emoji: "🤝", text: "Facilitate productive discussions.", desc: "I guide conversation and encourage participation.", points: { good: 3 } },
+                    { emoji: "🪞", text: "Dominates the conversation.", desc: "The meeting becomes the [My Name] show.", points: { narcissist: 3, micromanager: 1 } },
+                    { emoji: "🎭", text: "Change the agenda mid-meeting.", desc: "Nothing goes according to plan.", points: { chaosCreator: 3 } },
+                    { emoji: "🌪️", text: "Contradict what I said last week.", desc: "\"I never agreed to that\" about my own decisions.", points: { gaslighter: 3, moodDice: 1 } }
+                ]
+            },
+            {
+                category: "📝 Feedback Style",
+                question: "I give feedback by...",
+                answers: [
+                    { emoji: "🎯", text: "Constructive, specific suggestions.", desc: "Actionable advice for improvement.", points: { good: 3 } },
+                    { emoji: "🌋", text: "Telling them everything they do wrong.", desc: "Criticism without solutions.", points: { volcano: 3, micromanager: 1 } },
+                    { emoji: "🎲", text: "Only when I'm in a good mood.", desc: "Feedback availability depends on my emotional state.", points: { moodDice: 3 } },
+                    { emoji: "🔍", text: "Nitpicking tiny details.", desc: "Missing the forest for the trees.", points: { micromanager: 3 } }
+                ]
+            }
+        ];
+
+        const bossTypes = {
+            creditShark: {
+                emoji: "🦈",
+                name: "CREDIT SHARK",
+                tagline: "I might be stealing credit faster than my team can finish work!",
+                description: "If you're a Credit Shark, you systematically take credit for your team's work and ideas. You present their projects as your own and steal recognition faster than a shark smells blood in the water. This erodes trust and demotivates your team.",
+                difficulty: 5, // Represents high negative impact
+                shareText: "Uh oh, I might be a Credit Shark 🦈 - I might be stealing credit faster than my team can finish work! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📧 Give Public Credit: Make a conscious effort to publicly acknowledge individual and team contributions.",
+                        "📋 Document Team Wins: Keep a record of who did what and refer to it when reporting up.",
+                        "👥 Empower Team to Present: Allow your team members to present their own work to stakeholders.",
+                        "🎯 Focus on Facilitation: Shift your mindset from 'my work' to 'our team's work'."
+                    ],
+                    longterm: [
+                        "🔍 Develop Others: Invest in your team's growth so they can shine independently.",
+                        "📊 Track Team Impact: Measure success by your team's collective achievements, not just your own.",
+                        "🤝 Mentor & Coach: Guide your team to success rather than just taking over.",
+                        "🌱 Cultivate Humility: Understand that true leadership is about elevating others."
+                    ],
+                    redAlert: "If your team is disengaged, high performers are leaving, or you're getting feedback about lack of recognition, it's a critical sign. Address this immediately to rebuild trust."
+                }
+            },
+            micromanager: {
+                emoji: "🔍",
+                name: "MICROMANAGER",
+                tagline: "I might be controlling their breathing if I could!",
+                description: "If you're a Micromanager, you need to approve every tiny detail of your team's work. You hover, second-guess, and treat them like they can't be trusted with basic tasks. This stifles creativity and independence.",
+                difficulty: 4,
+                shareText: "Turns out I might be a Micromanager 🔍 - I might be controlling their breathing if I could! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📋 Define Clear Outcomes: Focus on 'what' needs to be done, not 'how'.",
+                        "⏰ Schedule Regular Check-ins: Establish predictable touchpoints instead of constant interruptions.",
+                        "📊 Trust the Process: Allow your team to develop their own methods.",
+                        "🎯 Empower Delegation: Delegate full tasks, not just components."
+                    ],
+                    longterm: [
+                        "📈 Track Team Autonomy: Measure how much independent work your team successfully completes.",
+                        "🤝 Coach for Independence: Guide them to solve problems rather than giving direct solutions.",
+                        "🔄 Gradually Release Control: Start with small tasks and slowly increase their autonomy.",
+                        "🚀 Seek Feedback: Ask your team how they feel about your level of involvement."
+                    ],
+                    redAlert: "If your team's morale is low, productivity is suffering due to bottlenecks, or you find yourself constantly overwhelmed by details, it's time to re-evaluate your management style."
+                }
+            },
+            gaslighter: {
+                emoji: "🌪️",
+                name: "GASLIGHTER",
+                tagline: "I might be making my team question their own sanity!",
+                description: "If you're a Gaslighter, you systematically make your team doubt their memory, perceptions, and reality. You deny conversations that definitely happened and make them feel confused or crazy. This is a highly toxic and damaging behavior.",
+                difficulty: 5,
+                shareText: "Oh no, I might be a Gaslighter 🌪️ - I might be making my team question their own sanity! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📝 Practice Active Listening: Pay close attention and confirm understanding.",
+                        "📧 Follow Up in Writing: Send emails summarizing key decisions and agreements.",
+                        "🗣️ Be Consistent: Ensure your words and actions align over time.",
+                        "🎯 Value Their Perspective: Acknowledge and respect their reality, even if it differs from yours."
+                    ],
+                    longterm: [
+                        "🤝 Seek Professional Coaching: Work with a coach to understand and change communication patterns.",
+                        "💪 Develop Empathy: Practice seeing situations from your team's point of view.",
+                        "📱 Self-Reflect: Regularly examine your own behaviors and their impact.",
+                        "🚨 Apologize Genuinely: If you realize you've gaslighted, apologize and commit to change."
+                    ],
+                    redAlert: "If your team is showing signs of anxiety, distrust, or high turnover, or if you've received formal complaints about your communication, seek immediate professional help. This behavior can lead to serious legal and ethical consequences."
+                }
+            },
+            ghost: {
+                emoji: "👻",
+                name: "GHOST BOSS",
+                tagline: "I'm invisible when they need me, everywhere when they don't!",
+                description: "If you're a Ghost Boss, you disappear whenever your team needs support but materialize instantly when there's credit to claim or blame to assign. This leaves your team feeling unsupported and adrift.",
+                difficulty: 3,
+                shareText: "I might be a Ghost Boss 👻 - invisible when my team needs me, everywhere when I don't! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📧 Establish Clear Communication Channels: Define how and when your team can reach you.",
+                        "⏰ Schedule Regular 1:1s: Commit to consistent, dedicated time for your team.",
+                        "🤝 Be Present: Make an effort to be visible and available, even for quick questions.",
+                        "📋 Proactively Offer Support: Don't wait to be asked; check in on their progress."
+                    ],
+                    longterm: [
+                        "🔍 Define Your Role: Clarify your responsibilities as a leader and commit to them.",
+                        "📈 Track Your Responsiveness: Monitor how quickly you respond to team needs.",
+                        "🎯 Empower Decision-Making: Delegate authority where appropriate, but remain a resource.",
+                        "💼 Build Trust: Consistently show up for your team, especially when things are tough."
+                    ],
+                    redAlert: "If projects are stalling due to lack of your input, team members are complaining about lack of direction, or you're consistently missing deadlines because you're out of the loop, your leadership is failing."
+                }
+            },
+            volcano: {
+                emoji: "🌋",
+                name: "VOLCANO",
+                tagline: "My team never knows when I'll erupt!",
+                description: "If you're a Volcano, you create a fear-based environment with unpredictable anger outbursts. Everyone walks on eggshells waiting for the next explosion. This destroys morale and psychological safety.",
+                difficulty: 4,
+                shareText: "My team might think I'm a Volcano 🌋 - they never know when I'll erupt! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "😌 Practice Emotional Regulation: Learn techniques like deep breathing or counting before reacting.",
+                        "📝 Identify Triggers: Understand what sets off your anger and develop coping strategies.",
+                        "🛡️ Step Away When Needed: If you feel an outburst coming, excuse yourself to cool down.",
+                        "⏰ Apologize Promptly: If you do erupt, apologize sincerely to those affected."
+                    ],
+                    longterm: [
+                        "🤝 Seek Anger Management/Coaching: Professional help can provide tools for managing emotions.",
+                        "📞 Develop Empathy: Understand the impact of your behavior on your team's well-being.",
+                        "🚨 Create a Culture of Safety: Encourage open feedback and model calm, constructive communication.",
+                        "🚪 Self-Reflect: Regularly assess your emotional state and its influence on your leadership."
+                    ],
+                    redAlert: "If your outbursts are frequent, involve yelling, intimidation, or lead to high team turnover, you are creating a hostile work environment. Seek immediate professional intervention and be prepared for serious consequences."
+                }
+            },
+            boundaryBulldozer: {
+                emoji: "🚧",
+                name: "BOUNDARY BULLDOZER",
+                tagline: "Personal space is a foreign concept to me!",
+                description: "If you're a Boundary Bulldozer, you trample over professional and personal boundaries like they don't exist. Your team's private life becomes your business, leading to discomfort and resentment.",
+                difficulty: 4,
+                shareText: "I might be a Boundary Bulldozer 🚧 - personal space is a foreign concept to me! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "🚫 Respect Off-Hours: Avoid contacting team members outside of work hours unless absolutely critical.",
+                        "📝 Define Communication Norms: Set clear expectations for availability and response times.",
+                        "🔄 Focus on Work: Keep conversations professional and work-related.",
+                        "👥 Respect Privacy: Do not pry into personal lives or share private information."
+                    ],
+                    longterm: [
+                        "📧 Use Professional Channels: Communicate primarily through official work platforms.",
+                        "🎯 Model Healthy Boundaries: Show your team that you also have and respect boundaries.",
+                        "📞 Seek Feedback: Ask your team if they feel their boundaries are respected.",
+                        "🚪 Educate Yourself: Learn about professional conduct and appropriate workplace interactions."
+                    ],
+                    redAlert: "If your team members are expressing discomfort, avoiding you, or if you've received complaints about inappropriate behavior, you are creating an unhealthy and potentially harassing environment. Address this immediately."
+                }
+            },
+            favoritism: {
+                emoji: "👑",
+                name: "FAVORITISM MONARCH",
+                tagline: "Unless you're in my royal court, you're nothing!",
+                description: "If you're a Favoritism Monarch, you have obvious favorites who can do no wrong, while everyone else lives as peasants in your kingdom. This creates resentment, unfairness, and stifles the potential of your entire team.",
+                difficulty: 4,
+                shareText: "I might be a Favoritism Monarch 👑 - unless you're in my royal court, you're nothing! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📊 Distribute Opportunities Fairly: Ensure projects, recognition, and feedback are given equitably.",
+                        "🎯 Evaluate Objectively: Base decisions on performance and merit, not personal preference.",
+                        "🤝 Engage with Everyone: Make an effort to build professional relationships with all team members.",
+                        "📧 Document Decisions: Keep clear records of why certain opportunities were given to whom."
+                    ],
+                    longterm: [
+                        "📈 Implement Transparent Processes: Create clear criteria for promotions, raises, and special projects.",
+                        "🔍 Seek 360-Degree Feedback: Get input from all team members to identify unconscious biases.",
+                        "👥 Mentor Broadly: Offer guidance and support to all team members, not just a select few.",
+                        "🚨 Address Bias: Actively work to identify and eliminate any personal biases in your leadership."
+                    ],
+                    redAlert: "If team morale is low, there's high turnover among non-favorites, or you're facing accusations of unfair treatment, your favoritism is damaging your team and your reputation. Seek coaching or HR guidance."
+                }
+            },
+            chaosCreator: {
+                emoji: "🎭",
+                name: "CHAOS CREATOR",
+                tagline: "I turn simple tasks into dramatic productions!",
+                description: "If you're a Chaos Creator, you thrive on drama and confusion. You create artificial urgency and change directions constantly, keeping everyone off-balance and stressed. This leads to wasted effort and burnout.",
+                difficulty: 3,
+                shareText: "I might be a Chaos Creator 🎭 - turning simple tasks into dramatic productions since forever! What kind of boss are you?",
+                                tips: {
+                    immediate: [
+                        "📋 Plan Ahead: Develop clear project plans and stick to them.",
+                        "⏰ Prioritize Effectively: Distinguish between true emergencies and routine tasks.",
+                        "🎯 Communicate Changes Clearly: If a change is necessary, explain why and its impact.",
+                        "📧 Confirm Decisions: Send written summaries of agreements and next steps."
+                    ],
+                    longterm: [
+                        "🤝 Empower Team Decision-Making: Allow your team to manage their own workflows.",
+                        "📊 Reflect on Impact: Regularly assess how your changes affect team productivity and morale.",
+                        "🔄 Seek Stability: Aim for consistency in processes and expectations.",
+                        "🚪 Delegate Responsibility: Trust your team to handle tasks without constant intervention."
+                    ],
+                    redAlert: "If your team is constantly overworked, missing deadlines due to shifting priorities, or showing signs of high stress and burnout, your chaotic leadership is the root cause. You need to establish more stable processes."
+                }
+            },
+            narcissist: {
+                emoji: "🪞",
+                name: "NARCISSIST",
+                tagline: "The world revolves around me!",
+                description: "If you're a Narcissist, you make everything about your image and needs. Your team's problems only matter if they affect you directly. This self-centered approach alienates your team and prevents genuine collaboration.",
+                difficulty: 5,
+                shareText: "I might be a Narcissist 🪞 - the world revolves around me, and I have the gravity to prove it! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "🎯 Practice Empathy: Actively try to understand your team's perspectives and challenges.",
+                        "🏆 Share the Spotlight: Deliberately highlight your team's achievements over your own.",
+                        "📊 Listen Actively: Give your full attention when your team speaks, without interrupting.",
+                        "⏰ Focus on Their Needs: Ask about their goals and how you can support them."
+                    ],
+                    longterm: [
+                        "🔍 Seek 360-Degree Feedback: Be open to honest, critical feedback about your behavior.",
+                        "📈 Develop Self-Awareness: Reflect on your motivations and how they impact others.",
+                        "🎭 Practice Humility: Acknowledge your mistakes and limitations.",
+                        "🚪 Seek Professional Help: Therapy or coaching can help address narcissistic tendencies."
+                    ],
+                    redAlert: "If your team is disengaged, fearful of speaking up, or consistently underperforming due to lack of support, your narcissistic leadership is destroying your team. This requires serious self-reflection and potentially professional intervention."
+                }
+            },
+            moodDice: {
+                emoji: "🎲",
+                name: "MOOD DICE",
+                tagline: "I'm rolling a new personality every morning!",
+                description: "If you're a Mood Dice, your emotional state determines everyone's day. Your team never knows which version of you they'll get, making planning and consistent interaction impossible. This creates an unstable and stressful environment.",
+                difficulty: 3,
+                shareText: "I might be a Mood Dice 🎲 - rolling a new personality every morning! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "🌡️ Manage Your Emotions: Learn to recognize and regulate your moods before interacting with your team.",
+                        "📧 Use Written Communication: When emotions are high, communicate in writing to ensure clarity and reduce volatility.",
+                        "⏰ Maintain Professionalism: Regardless of your mood, ensure your interactions remain respectful and constructive.",
+                        "🛡️ Don't Take It Out On Them: Be aware that your moods directly impact your team's morale and productivity."
+                    ],
+                    longterm: [
+                        "📊 Identify Triggers: Understand what causes your mood swings and develop strategies to mitigate them.",
+                        "🤝 Seek Support: Consider therapy or coaching to help with emotional regulation.",
+                        "📈 Model Consistency: Strive for a stable and predictable demeanor.",
+                        "🎯 Separate Personal from Professional: Leave personal issues outside of work interactions."
+                    ],
+                    redAlert: "If your mood swings are causing significant stress, anxiety, or confusion among your team, or if they lead to unprofessional behavior, you are creating an unhealthy work environment. Address this for your team's well-being and your own leadership effectiveness."
+                }
+            },
+            blameDeflector: {
+                emoji: "🛡️",
+                name: "BLAME DEFLECTOR",
+                tagline: "Responsibility bounces off me like bullets!",
+                description: "If you're a Blame Deflector, you've perfected the art of never being at fault. You could mess up a one-person job and somehow blame the instructions or someone else. This erodes accountability and trust within your team.",
+                difficulty: 3,
+                shareText: "I might be a Blame Deflector 🛡️ - responsibility bounces off me like bullets off Superman! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📝 Take Ownership: Acknowledge your mistakes and their impact.",
+                        "📧 Communicate Clearly: Provide clear instructions and expectations to minimize misunderstandings.",
+                        "👥 Foster Accountability: Encourage a culture where everyone, including yourself, takes responsibility.",
+                        "🎯 Focus on Solutions: When issues arise, focus on how to fix them, not who to blame."
+                    ],
+                    longterm: [
+                        "📊 Learn from Mistakes: Use errors as opportunities for growth and process improvement.",
+                        "🤝 Build Trust: Show your team that it's safe to make mistakes and learn from them.",
+                        "🔍 Self-Reflect: Regularly assess your own contributions to problems.",
+                        "🚨 Model Vulnerability: Show your team that it's okay to be imperfect and admit fault."
+                    ],
+                    redAlert: "If they consistently blame you for their failures in ways that damage your reputation or career prospects - escalate to HR with documented evidence. This pattern can constitute workplace bullying."
+                }
+            },
+            opportunityHoarder: {
+                emoji: "�",
+                name: "OPPORTUNITY HOARDER",
+                tagline: "I'm guarding career growth like a dragon guards gold!",
+                description: "If you're an Opportunity Hoarder, you block your team's advancement at every turn. There's always another reason they're 'not ready yet' for the opportunities they deserve. This stunts their growth and leads to high turnover of talent.",
+                difficulty: 4,
+                shareText: "I might be an Opportunity Hoarder 🔒 - I'm guarding career growth like a dragon guards gold! What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "📋 Define Clear Growth Paths: Work with your team to outline specific steps for advancement.",
+                        "📊 Delegate Meaningful Work: Give them projects that challenge and prepare them for next steps.",
+                        "🎯 Provide Constructive Feedback: Offer actionable advice for skill development, not just criticism.",
+                        "🤝 Advocate for Your Team: Actively champion your team members for promotions and new roles."
+                    ],
+                    longterm: [
+                        "📈 Invest in Training: Provide resources for skill development and learning.",
+                        "🔍 Identify Successors: Actively prepare team members to take on your responsibilities or higher roles.",
+                        "👥 Mentor & Sponsor: Guide and advocate for your team's career progression.",
+                        "🚪 Celebrate Departures: Support team members who move to better opportunities, even if it's outside your team."
+                    ],
+                    redAlert: "If your high-potential team members are leaving for other opportunities, expressing frustration about lack of growth, or if your team lacks diversity in leadership, you are failing to develop your talent. This will ultimately harm your team's capabilities and your own success."
+                }
+            },
+            good: {
+                emoji: "🌟",
+                name: "ACTUALLY DECENT",
+                tagline: "You won the leadership lottery!",
+                description: "Congratulations! You are an actually decent boss who treats people with respect, communicates clearly, and supports professional growth. This is a rare and highly valued quality!",
+                difficulty: 1, // Represents low negative impact (i.e., high positive impact)
+                shareText: "I'm an actually decent boss! 🌟 Apparently I won the leadership lottery. What kind of boss are you?",
+                tips: {
+                    immediate: [
+                        "🎯 Propose Stretch Projects: Empower your team with challenging assignments that showcase their potential.",
+                        "📅 Schedule Regular 1:1s: Use this dedicated time to discuss their career goals and provide feedback.",
+                        "💡 Encourage Innovation: Foster an environment where new ideas are welcomed and explored.",
+                        "🤝 Ask for Specific Mentorship: Offer your guidance on skills they want to develop."
+                    ],
+                    longterm: [
+                        "🌱 Create Development Plan Together: Collaborate on a detailed career roadmap for each team member.",
+                        "📈 Request Increased Responsibilities: Support them in gradually taking on more challenging work.",
+                        "🤝 Build Cross-Functional Exposure: Introduce them to other leaders and teams to broaden their network.",
+                        "💼 Discuss Succession Planning: Work with them to understand potential career paths within the organization."
+                    ],
+                    redAlert: "Even good bosses can have blind spots. Continuously seek feedback, stay humble, and never stop learning. The best leaders are always evolving."
+                }
+            }
+        };
+
+        // Quiz state
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let bossScores = {};
+        let randomizedQuestions = [];
+
+        // Track the currently open archetype accordion in the gallery
+        let currentOpenGalleryAccordion = null;
+
+        // Shuffle array function
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Create randomized version of questions
+        function createRandomizedQuestions() {
+            randomizedQuestions = questions.map(question => ({
+                ...question,
+                answers: shuffleArray(question.answers)
+            }));
+        }
+
+        // Initialize scores
+        function initializeScores() {
+            bossScores = {};
+            Object.keys(bossTypes).forEach(type => {
+                bossScores[type] = 0;
+            });
+        }
+
+        // Show screen with smooth transition
+        function showScreen(screenId) {
+            const currentScreen = document.querySelector('.screen.active');
+            const targetScreen = document.getElementById(screenId);
+            
+            if (currentScreen) {
+                currentScreen.classList.remove('active');
+            }
+            
+            setTimeout(() => {
+                targetScreen.classList.add('active');
+            }, 150);
+        }
+
+        // Show toast notification
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Function to advance to the next question or show results
+        function nextQuestionOrResults() {
+            if (currentQuestionIndex < randomizedQuestions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                // Show loading state before results
+                const backBtn = document.getElementById('back-btn');
+                backBtn.disabled = true; // Disable back button during calculation
+                backBtn.textContent = 'Calculating...'; // Provide feedback
+
+                setTimeout(() => {
+                    showResults();
+                    backBtn.disabled = false; // Re-enable if quiz is retaken
+                    backBtn.textContent = '← Previous'; // Reset text
+                }, 1000);
+            }
+        }
+
+        // Start quiz
+        function startQuiz() {
+            // Create randomized version of questions
+            createRandomizedQuestions();
+            
+            // Reset all quiz state
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            initializeScores();
+            
+            // Reset UI elements (only back button now)
+            document.getElementById('back-btn').style.display = 'none'; // Hide initially
+            document.getElementById('back-btn').disabled = false; // Ensure it's not disabled from previous run
+            document.getElementById('back-btn').textContent = '← Previous'; // Reset text
+            
+            // Clear any selected answers from DOM
+            document.querySelectorAll('.answer-option').forEach(option => {
+                option.classList.remove('selected');
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) radio.checked = false;
+            });
+            
+            showScreen('quiz');
+            loadQuestion();
+        }
+
+        // Load current question
+        function loadQuestion() {
+            const question = randomizedQuestions[currentQuestionIndex];
+            const container = document.getElementById('question-container');
+            
+            // Update progress
+            const progressPercent = Math.round(((currentQuestionIndex + 1) / randomizedQuestions.length) * 100);
+            document.getElementById('current-question').textContent = currentQuestionIndex + 1;
+            document.getElementById('progress-percent').textContent = progressPercent + '%';
+            document.getElementById('progress-fill').style.width = progressPercent + '%';
+            
+            // Update question content
+            const questionNumberSpan = container.querySelector('.question-number span:last-child');
+            if (questionNumberSpan) {
+                questionNumberSpan.textContent = question.category.split(' ').slice(1).join(' ');
+            }
+            document.getElementById('question-title').textContent = question.question;
+            
+            // Clear and populate answers
+            const optionsContainer = document.getElementById('answer-options');
+            optionsContainer.innerHTML = '';
+            
+            question.answers.forEach((answer, index) => {
+                const label = document.createElement('label');
+                label.className = 'answer-option bg-gray-100 border-2 border-transparent rounded-2xl p-6 cursor-pointer transition-all duration-300 relative overflow-hidden hover:border-purple-500 hover:bg-purple-50 hover:shadow-md';
+                label.dataset.value = index;
+                
+                label.innerHTML = `
+                    <input type="radio" name="current-question" value="${index}" class="sr-only">
+                    <div class="flex items-center gap-3 text-lg font-semibold mb-1 text-gray-800">
+                        <span class="text-3xl">${answer.emoji}</span>
+                        <span>${answer.text}</span>
+                    </div>
+                    <div class="text-sm text-gray-500 ml-12">${answer.desc}</div>
+                `;
+                
+                optionsContainer.appendChild(label);
+            });
+            
+            // Restore previous answer if exists
+            if (userAnswers[currentQuestionIndex] !== undefined) {
+                const selectedIndex = userAnswers[currentQuestionIndex];
+                const selectedOption = optionsContainer.children[selectedIndex];
+                selectedOption.classList.add('selected', 'border-pink-500', 'bg-pink-50', 'shadow-lg');
+                selectedOption.querySelector('input').checked = true;
+            }
+            
+            // Show/hide back button
+            document.getElementById('back-btn').style.display = currentQuestionIndex > 0 ? 'inline-flex' : 'none';
+        }
+
+        // Recalculate scores from scratch
+        function recalculateScores() {
+            initializeScores();
+            
+            userAnswers.forEach((answerIndex, questionIndex) => {
+                if (answerIndex !== undefined) {
+                    const question = randomizedQuestions[questionIndex];
+                    const answer = question.answers[answerIndex];
+                    
+                    if (answer.points) {
+                        for (const [type, points] of Object.entries(answer.points)) {
+                            bossScores[type] = (bossScores[type] || 0) + points;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Calculate boss type
+        function calculateBossType() {
+            recalculateScores();
+            
+            // Find highest scoring bad boss type
+            let maxBadScore = 0;
+            let badBossResultType = null;
+            
+            for (const [type, score] of Object.entries(bossScores)) {
+                if (type !== 'good' && score > maxBadScore) {
+                    maxBadScore = score;
+                    badBossResultType = type;
+                }
+            }
+
+            // Check if 'good' boss score is significantly higher than any bad boss score
+            // Or if no bad boss type scored significantly
+            const goodBossScore = bossScores['good'] || 0;
+            if (goodBossScore >= 3 && goodBossScore > maxBadScore) { // Adjusted threshold for 'good'
+                return 'good';
+            }
+            
+            // If no clear bad winner, or very low scores for bad types, default to a common bad boss type
+            if (!badBossResultType || maxBadScore < 3) {
+                const commonBadBossTypes = ['micromanager', 'creditShark', 'volcano']; // More common archetypes
+                return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
+            }
+            
+            return badBossResultType;
+        }
+
+        // Populate boss gallery with full-width accordions
+        function populateBossGalleryAccordions(currentQuizResultType) {
+            const container = document.getElementById('boss-types-accordion-container');
+            container.innerHTML = ''; // Clear previous content
+            
+            Object.entries(bossTypes).forEach(([key, boss]) => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = `bg-gray-100 rounded-xl shadow-md transition-all duration-300 ${key === currentQuizResultType ? 'border-2 border-pink-500 bg-pink-50' : ''}`;
+                accordionItem.setAttribute('data-key', key);
+
+                const header = document.createElement('button');
+                header.className = `accordion-header w-full text-left py-4 px-6 rounded-xl font-bold text-gray-900 text-xl flex justify-between items-center transition-colors duration-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50`;
+                header.innerHTML = `
+                    <span class="flex items-center gap-3">
+                        <span class="text-4xl">${boss.emoji}</span>
+                        <span>${boss.name}</span>
+                    </span>
+                    <span class="accordion-icon transform transition-transform duration-200">▼</span>
+                `;
+                accordionItem.appendChild(header);
+
+                const content = document.createElement('div');
+                content.className = 'archetype-accordion-content'; // Apply max-height transition here
+                content.innerHTML = `
+                    <div class="px-6 pb-4 text-gray-700 text-left">
+                        <p class="text-lg opacity-90 italic mb-3">${boss.tagline}</p>
+                        <p class="text-base opacity-90 leading-relaxed mb-4">${boss.description}</p>
+                        <div class="flex items-center gap-2 mb-4 text-base">
+                            <span>Impact on Team:</span>
+                            <span class="text-yellow-400 text-xl">${'⭐'.repeat(boss.difficulty)}</span>
+                        </div>
+                        <h4 class="text-xl font-semibold mb-3 text-purple-700 flex items-center gap-2">⚡ Immediate Actions:</h4>
+                        <ul class="list-none p-0 mb-4">
+                            ${boss.tips.immediate.map(tip => `<li class="flex items-start gap-3 py-2 text-gray-700"><span class="text-pink-500 font-bold text-lg">•</span> ${tip}</li>`).join('')}
+                        </ul>
+                        <h4 class="text-xl font-semibold mb-3 text-purple-700 flex items-center gap-2">🏗️ Long-term Strategies:</h4>
+                        <ul class="list-none p-0 mb-4">
+                            ${boss.tips.longterm.map(tip => `<li class="flex items-start gap-3 py-2 text-gray-700"><span class="text-pink-500 font-bold text-lg">•</span> ${tip}</li>`).join('')}
+                        </ul>
+                        <div class="bg-red-50 border-2 border-red-300 rounded-xl p-4 mt-4">
+                            <h4 class="text-red-700 font-bold text-lg mb-2">🚨 Red Flags (Time for serious change):</h4>
+                            <p class="text-red-900 text-sm">${boss.tips.redAlert}</p>
+                        </div>
+                    </div>
+                `;
+                accordionItem.appendChild(content);
+                container.appendChild(accordionItem);
+
+                // Add event listener for accordion toggle
+                header.addEventListener('click', () => {
+                    // Close any currently open accordion
+                    if (currentOpenGalleryAccordion && currentOpenGalleryAccordion !== content) {
+                        currentOpenGalleryAccordion.classList.remove('expanded');
+                        currentOpenGalleryAccordion.previousElementSibling.classList.remove('expanded'); // Remove expanded class from header
+                    }
+
+                    // Toggle the clicked accordion
+                    content.classList.toggle('expanded');
+                    header.classList.toggle('expanded'); // Add expanded class to header for icon rotation
+
+                    // Update currentOpenGalleryAccordion
+                    if (content.classList.contains('expanded')) {
+                        currentOpenGalleryAccordion = content;
+                        // Scroll to the opened accordion for better UX
+                        accordionItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        currentOpenGalleryAccordion = null;
+                    }
+                });
+            });
+        }
+
+        // Show results
+        function showResults() {
+            const bossType = calculateBossType();
+            const boss = bossTypes[bossType];
+            
+            // Update main result display
+            document.getElementById('boss-emoji').textContent = boss.emoji;
+            document.getElementById('boss-name').textContent = `You might be a ${boss.name}`;
+            document.getElementById('boss-tagline').textContent = boss.tagline;
+            document.getElementById('boss-description').textContent = boss.description;
+            
+            // Update difficulty stars
+            const stars = '⭐'.repeat(boss.difficulty);
+            document.getElementById('difficulty-stars').textContent = stars;
+            
+            // Update card background for good boss
+            const resultCard = document.getElementById('boss-result-card');
+            if (bossType === 'good') {
+                resultCard.classList.remove('from-purple-600', 'to-indigo-800');
+                resultCard.classList.add('from-green-500', 'to-teal-700');
+            } else {
+                resultCard.classList.remove('from-green-500', 'to-teal-700');
+                resultCard.classList.add('from-purple-600', 'to-indigo-800');
+            }
+            
+            // Update tips section for the main result
+            document.getElementById('tips-boss-name').textContent = `How to Improve if you are a ${boss.name}`;
+            
+            // Populate tips for the main result
+            const immediateTips = document.getElementById('immediate-tips');
+            const longtermTips = document.getElementById('longterm-tips');
+            const redAlertText = document.getElementById('red-alert-text');
+            
+            immediateTips.innerHTML = '';
+            longtermTips.innerHTML = '';
+            
+            boss.tips.immediate.forEach(tip => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-3 py-2 text-gray-700';
+                li.innerHTML = `<span class="text-pink-500 font-bold text-lg">•</span> ${tip}`;
+                immediateTips.appendChild(li);
+            });
+            
+            boss.tips.longterm.forEach(tip => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-3 py-2 text-gray-700';
+                li.innerHTML = `<span class="text-pink-500 font-bold text-lg">•</span> ${tip}`;
+                longtermTips.appendChild(li);
+            });
+            
+            redAlertText.textContent = boss.tips.redAlert;
+            
+            // Populate boss gallery with full-width accordions
+            populateBossGalleryAccordions(bossType);
+
+            // Ensure no gallery accordion is open initially
+            if (currentOpenGalleryAccordion) {
+                currentOpenGalleryAccordion.classList.remove('expanded');
+                currentOpenGalleryAccordion.previousElementSibling.classList.remove('expanded');
+                currentOpenGalleryAccordion = null;
+            }
+            
+            showScreen('results');
+            
+            // Add celebration animation to result card
+            setTimeout(() => {
+                resultCard.style.animation = 'selectPulse 0.6s ease';
+            }, 500);
+            
+            // Store result for sharing
+            window.currentBossType = boss;
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize randomized questions and scores
+            createRandomizedQuestions();
+            initializeScores();
+            
+            // Start quiz button
+            document.getElementById('start-quiz').addEventListener('click', function() {
+                // Prevent double-clicking
+                if (this.classList.contains('loading')) return;
+                
+                this.classList.add('loading');
+                this.textContent = 'Starting Quiz...';
+                
+                setTimeout(() => {
+                    startQuiz();
+                    this.classList.remove('loading');
+                    this.textContent = '🚀 Start Self-Assessment';
+                }, 300);
+            });
+            
+            // Answer selection - now auto-advances
+            document.addEventListener('change', function(e) {
+                if (e.target.type === 'radio' && e.target.name === 'current-question') {
+                    // Update visual selection
+                    document.querySelectorAll('.answer-option').forEach(option => {
+                        option.classList.remove('selected', 'border-pink-500', 'bg-pink-50', 'shadow-lg');
+                    });
+                    const selectedOption = e.target.closest('.answer-option');
+                    selectedOption.classList.add('selected', 'border-pink-500', 'bg-pink-50', 'shadow-lg');
+                    
+                    // Store answer
+                    const answerIndex = parseInt(e.target.value);
+                    userAnswers[currentQuestionIndex] = answerIndex;
+
+                    // Auto-advance to next question or results
+                    setTimeout(nextQuestionOrResults, 300); // Small delay for visual feedback
+                }
+            });
+            
+            // Navigation buttons
+            document.getElementById('back-btn').addEventListener('click', function() {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--;
+                    loadQuestion();
+                }
+            });
+        });
+
+        // Sharing functions with error handling
+        function shareToLinkedIn() {
+            const boss = window.currentBossType;
+            const text = `${boss.shareText || `I just took the 'Are You a Bad Boss?' quiz and my archetype is: ${boss.name} ${boss.emoji}!`} Take the quiz and discover your leadership style!`;
+            const url = encodeURIComponent(window.location.href);
+            
+            try {
+                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${encodeURIComponent(text)}`, '_blank');
+            } catch (error) {
+                showToast('Unable to open LinkedIn. Please try copying the link instead.');
+            }
+        }
+
+        function shareToTwitter() {
+            const boss = window.currentBossType;
+            const text = boss.shareText || `I just took the 'Are You a Bad Boss?' quiz and my archetype is: ${boss.name} ${boss.emoji}! What kind of boss are you?`;
+            const url = encodeURIComponent(window.location.href);
+            
+            try {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`, '_blank');
+            } catch (error) {
+                showToast('Unable to open Twitter. Please try copying the link instead.');
+            }
+        }
+
+        function shareToInstagram() {
+            const boss = window.currentBossType;
+            const text = `${boss.shareText || `My leadership archetype is: ${boss.name} ${boss.emoji}!`}\n\nTake the quiz: ${window.location.href}`;
+            
+            if (document.execCommand) { // Fallback for older browsers or if navigator.clipboard not available
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed'; // Avoid scrolling to bottom
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Text copied! Paste it in your Instagram story 📸');
+                } catch (err) {
+                    showToast('Unable to copy text. Please copy the link manually.');
+                }
+                document.body.removeChild(textarea);
+            } else {
+                showToast('Copy feature not supported. Please copy the link manually.');
+            }
+        }
+
+        function copyLink() {
+            if (document.execCommand) {
+                const textarea = document.createElement('textarea');
+                textarea.value = window.location.href;
+                textarea.style.position = 'fixed';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Link copied to clipboard! 🔗');
+                } catch (err) {
+                    showToast('Unable to copy link. Please copy manually from address bar.');
+                }
+                document.body.removeChild(textarea);
+            } else {
+                showToast('Copy feature not supported. Please copy from address bar.');
+            }
+        }
+
+        function emailToFriend() {
+            const boss = window.currentBossType;
+            const subject = encodeURIComponent('Check out this "Are You a Bad Boss?" Quiz!');
+            const body = encodeURIComponent(`I just took the "Are You a Bad Boss?" quiz and my archetype is: ${boss.name} ${boss.emoji}!\n\nTake the quiz to find out your leadership style: ${window.location.href}\n\n#BadBossQuiz #LeadershipReflection`);
+            
+            try {
+                const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+                window.open(mailtoLink, '_blank');
+                
+                setTimeout(() => {
+                    showToast('Email client should open, or copy this link to share manually! 📧');
+                }, 500);
+                
+            } catch (error) {
+                if (document.execCommand) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = window.location.href;
+                    textarea.style.position = 'fixed';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast('Link copied to clipboard! Share it however you like 📧');
+                    } catch (err) {
+                        showToast('Please copy the link from your address bar to share with friends.');
+                    }
+                    document.body.removeChild(textarea);
+                } else {
+                    showToast('Please copy the link from your address bar to share with friends.');
+                }
+            }
+        }
+
+        function retakeQuiz() {
+            // Create new randomized version of questions
+            createRandomizedQuestions();
+            
+            // Reset all quiz state
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            initializeScores();
+            
+            // Reset UI elements
+            // The next-btn is removed, so we only need to reset the back-btn's state
+            document.getElementById('back-btn').style.display = 'none'; // Hide back button initially
+            document.getElementById('back-btn').disabled = false;
+            document.getElementById('back-btn').textContent = '← Previous';
+            
+            // Clear any selected answers from DOM
+            document.querySelectorAll('.answer-option').forEach(option => {
+                option.classList.remove('selected', 'border-pink-500', 'bg-pink-50', 'shadow-lg');
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) radio.checked = false;
+            });
+            
+            // Reset progress bar
+            document.getElementById('progress-fill').style.width = '0%';
+            
+            // Reset boss result card background
+            const resultCard = document.getElementById('boss-result-card');
+            resultCard.classList.remove('from-green-500', 'to-teal-700');
+            resultCard.classList.add('from-purple-600', 'to-indigo-800');
+
+            // Hide the archetype detail display
+            // document.getElementById('archetype-detail-display').classList.remove('active'); // No longer needed with new accordion structure
+            
+            showScreen('landing');
+        }
+    </script>
+</body>
+</html>
+�
