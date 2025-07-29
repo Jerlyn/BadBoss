@@ -544,7 +544,7 @@
             TOTAL_QUESTIONS: 8, // Corrected to 8
             PROGRESS_DELAY: 300,
             TOAST_DURATION: 3000,
-            GOOD_BOSS_THRESHOLD: 3,
+            GOOD_BOSS_THRESHOLD: 12,
             MIN_BAD_BOSS_SCORE: 3,
             
             screens: {
@@ -1481,30 +1481,55 @@
         }
 
         function calculateBossType() {
-            recalculateScores();
-            
-            let maxBadScore = 0;
-            let badBossResultType = null;
-            
-            for (const [type, score] of Object.entries(bossScores)) {
-                if (type !== 'good' && score > maxBadScore) {
+        recalculateScores();
+
+        let maxBadScore = 0;
+        let badBossResultType = null;
+        let totalBadScore = 0; // NEW: Initialize total bad score
+
+        for (const [type, score] of Object.entries(bossScores)) {
+            if (type !== 'good') {
+                totalBadScore += score; // Accumulate all bad scores
+                if (score > maxBadScore) {
                     maxBadScore = score;
                     badBossResultType = type;
                 }
             }
+        }
 
-            const goodBossScore = bossScores['good'] || 0;
-            if (goodBossScore >= QuizConfig.GOOD_BOSS_THRESHOLD && goodBossScore > maxBadScore) {
-                return 'good';
-            }
-            
-            if (!badBossResultType || maxBadScore < QuizConfig.MIN_BAD_BOSS_SCORE) {
-                const commonBadBossTypes = ['micromanager', 'creditShark', 'volcano'];
-                return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
-            }
-            
+        const goodBossScore = bossScores['good'] || 0;
+
+        // Priority 1: If good score is clearly dominant AND meets high threshold
+        // This is the primary good path.
+        if (goodBossScore >= QuizConfig.GOOD_BOSS_THRESHOLD && goodBossScore > maxBadScore) {
+            return 'good';
+        }
+
+        // Priority 2: If a specific bad archetype is clearly dominant and meets its minimum threshold
+        // This catches strong negative archetypes.
+        if (badBossResultType && maxBadScore >= QuizConfig.MIN_BAD_BOSS_SCORE) {
             return badBossResultType;
         }
+
+        // NEW Priority 3: If total bad score is significant, but no single type dominates, or individual types are below MIN_BAD_BOSS_SCORE.
+        // This catches "generally bad" bosses who spread their badness.
+        const TOTAL_BAD_SCORE_THRESHOLD = 8; // Adjust this value. Example: 8 points spread across bad types.
+        if (totalBadScore >= TOTAL_BAD_SCORE_THRESHOLD) {
+            // If we have a 'badBossResultType' (even if below MIN_BAD_BOSS_SCORE), we might default to it,
+            // or we could use the commonBadBossTypes randomizer if we want to obscure a specific low-score bad type.
+            // For now, let's use the randomizer as a fallback for "general badness."
+            const commonBadBossTypes = ['micromanager', 'creditShark', 'volcano'];
+            return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
+        }
+
+
+        // Final Fallback: If not good, not strongly bad, and not significantly bad overall.
+        // This means scores are very low for both good and bad, or primarily in the 'good' range but not meeting the high threshold.
+        // You might want to make this always return *a* bad type if they didn't hit 'good'.
+        // For now, it will use your existing random bad type.
+        const commonBadBossTypes = ['micromanager', 'creditShark', 'volcano'];
+        return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
+    }
 
         function populateBossGalleryAccordions(currentQuizResultType) {
             const container = document.getElementById('boss-types-accordion-container');
