@@ -541,15 +541,17 @@
     <script>
         // CONFIGURATION OBJECT
         const QuizConfig = {
-            TOTAL_QUESTIONS: 8, // Corrected to 8
+            TOTAL_QUESTIONS: 8,
             PROGRESS_DELAY: 300,
             TOAST_DURATION: 3000,
-            GOOD_BOSS_THRESHOLD: 12,
-            MIN_BAD_BOSS_SCORE: 3,
             
+            // NEW THRESHOLDS FOR RESULT CALCULATION
+            VERY_GOOD_THRESHOLD: 18, // Requires 6 out of 8 'good' answers (6 * 3 = 18 points)
+            MODERATELY_BAD_THRESHOLD: 5, // Total bad score that indicates general badness
+            DOMINANT_BAD_THRESHOLD: 7, // A single bad type score that indicates a dominant bad archetype (e.g., 3 points from one answer + 1 point from another, or two 3-point answers)
+
             screens: {
                 VALUE_AFFIRMATION: 'value-affirmation',
-                // LANDING screen is now merged into VALUE_AFFIRMATION
                 QUIZ: 'quiz',
                 RESULTS: 'results'
             },
@@ -569,7 +571,6 @@
             events: {
                 PAGE_VIEW: 'page_view',
                 QUIZ_STARTED: 'quiz_started',
-                // Renamed and adjusted: VALUES_ENTERED is now more explicitly about the user starting the quiz
                 QUIZ_START_INTERACTION: 'quiz_start_interaction', 
                 QUESTION_ANSWERED: 'question_answered',
                 QUESTION_BACK: 'question_back',
@@ -579,7 +580,7 @@
                 SHARE_COMPLETE: 'share_complete',
                 ERROR_OCCURRED: 'error_occured',
                 FUNNEL_STEP: 'funnel_step',
-                ARCHETYPE_ACCORDION_TOGGLED: 'archetype_accordion_toggled' // New event for accordion
+                ARCHETYPE_ACCORDION_TOGGLED: 'archetype_accordion_toggled'
             },
             
             track(eventName, data = {}) {
@@ -613,7 +614,6 @@
             },
 
             getCurrentStepNumber(step) {
-                // Adjusted steps for combined homepage
                 const steps = ['value_entry', 'quiz_start', 'quiz_complete', 'results_view'];
                 return steps.indexOf(step) + 1;
             }
@@ -705,7 +705,7 @@
             },
             micromanager: {
                 name: "MICROMANAGER",
-                emoji: "",
+                emoji: "🔍",
                 tagline: "I might be controlling their breathing if I could!",
                 difficulty: 4,
                 animationType: "sway",
@@ -1143,22 +1143,24 @@
 
         function generateDescription(boss) {
             const descriptions = {
-                creditShark: "If you're a Credit Shark, you systematically take credit for your team's work and ideas. You present their projects as your own and steal recognition faster than a shark smells blood in the water. This erodes trust and demotivates your team.",
+                creditshark: "If you're a Credit Shark, you systematically take credit for your team's work and ideas. You present their projects as your own and steal recognition faster than a shark smells blood in the water. This erodes trust and demotivates your team.",
                 micromanager: "If you're a Micromanager, you need to approve every tiny detail of your team's work. You hover, second-guess, and treat them like they can't be trusted with basic tasks. This stifles creativity and independence.",
                 gaslighter: "If you're a Gaslighter, you systematically make your team doubt their memory, perceptions, and reality. You deny conversations that definitely happened and make them feel confused or crazy. This is a highly toxic and damaging behavior.",
                 ghost: "If you're a Ghost Boss, you disappear whenever your team needs support but materialize instantly when there's credit to claim or blame to assign. This leaves your team feeling unsupported and adrift.",
                 volcano: "If you're a Volcano, you create a fear-based environment with unpredictable anger outbursts. Everyone walks on eggshells waiting for the next explosion. This destroys morale and psychological safety.",
-                boundaryBulldozer: "If you're a Boundary Bulldozer, you trample over professional and personal boundaries like they don't exist. Your team's private life becomes your business, leading to discomfort and resentment.",
+                boundarybulldozer: "If you're a Boundary Bulldozer, you trample over professional and personal boundaries like they don't exist. Your team's private life becomes your business, leading to discomfort and resentment.",
                 favoritism: "If you're a Favoritism Monarch, you have obvious favorites who can do no wrong, while everyone else lives as peasants in your kingdom. This creates resentment, unfairness, and stifles the potential of your entire team.",
-                chaosCreator: "If you're a Chaos Creator, you thrive on drama and confusion. You create artificial urgency and change directions constantly, keeping everyone off-balance and stressed. This leads to wasted effort and burnout.",
+                chaoscreator: "If you're a Chaos Creator, you thrive on drama and confusion. You create artificial urgency and change directions constantly, keeping everyone off-balance and stressed. This leads to wasted effort and burnout.",
                 narcissist: "If you're a Narcissist, you make everything about your image and needs. Your team's problems only matter if they affect you directly. This self-centered approach alienates your team and prevents genuine collaboration.",
-                moodDice: "If you're a Mood Dice, your emotional state determines everyone's day. Your team never knows which version of you they'll get, making planning and consistent interaction impossible. This creates an unstable and stressful environment.",
-                blameDeflector: "If you're a Blame Deflector, you've perfected the art of never being at fault. You could mess up a one-person job and somehow blame the instructions or someone else. This erodes accountability and trust within your team.",
-                opportunityHoarder: "If you're an Opportunity Hoarder, you block your team's advancement at every turn. There's always another reason they're 'not ready yet' for the opportunities they deserve. This stunts their growth and leads to high turnover of talent.",
+                mooddice: "If you're a Mood Dice, your emotional state determines everyone's day. Your team never knows which version of you they'll get, making planning and consistent interaction impossible. This creates an unstable and stressful environment.",
+                blamedeflector: "If you're a Blame Deflector, you've perfected the art of never being at fault. You could mess up a one-person job and somehow blame the instructions or someone else. This erodes accountability and trust within your team.",
+                opportunityhoarder: "If you're an Opportunity Hoarder, you block your team's advancement at every turn. There's always another reason they're 'not ready yet' for the opportunities they deserve. This stunts their growth and leads to high turnover of talent.",
                 good: "Congratulations! You are an actually decent boss who treats people with respect, communicates clearly, and supports professional growth. This is a rare and highly valued quality!"
             };
             
-            return descriptions[boss.name.toLowerCase().replace(/\s+/g, '')] || boss.tagline;
+            // Normalize the boss name for lookup (e.g., "CREDIT SHARK" -> "creditshark")
+            const normalizedBossName = boss.name.toLowerCase().replace(/\s+/g, '');
+            return descriptions[normalizedBossName] || boss.tagline;
         }
 
         // QUIZ DATA AND LOGIC
@@ -1176,7 +1178,7 @@
                         svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M228.6,104.7l-96.4-72.3a8,8,0,0,0-9.8,1.3L28.6,104.7A8,8,0,0,0,24,112v88a8,8,0,0,0,8,8H224a8,8,0,0,0,8-8V112A8,8,0,0,0,228.6,104.7ZM40,120.4,128,55.1l88,65.3V192H40Z"></path></svg>`,
                         text: "I take credit as the visionary leader.", points: { creditShark: 3, narcissist: 1 } },
                     { 
-                        emoji: "",
+                        emoji: "🌋", // Changed from empty string to volcano emoji
                         svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M224,128a96,96,0,0,1-192,0c0-34.7,21.5-64.7,52.8-77.9a8,8,0,0,1,9.4,13.2,80,80,0,0,0-46.2,64.7,80,80,0,0,0,160,0,80,80,0,0,0-46.2-64.7,8,8,0,0,1,9.4-13.2C202.5,63.3,224,93.3,224,128Z"></path></svg>`,
                         text: "I find something wrong with the success.", points: { volcano: 3, micromanager: 1 } },
                     { 
@@ -1216,11 +1218,11 @@
                         svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M128,24a104,104,0,1,0,104,104A104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z"></path></svg>`,
                         text: "Complete freedom to manage their projects.", points: { good: 3 } },
                     { 
-                        emoji: "🔍",
+                        emoji: "�",
                         svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M164.85,164.85a8,8,0,0,1-11.31,11.31l-48-48a8,8,0,0,1,11.31-11.31ZM229.66,218.34l-48-48a8,8,0,0,0-11.32,11.32l48,48a8,8,0,0,0,11.32-11.32ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Zm0-128a56,56,0,1,1-56,56A56.06,56.06,0,0,1,112,56Z"></path></svg>`,
                         text: "Every task needs my approval first.", points: { micromanager: 3 } },
                     { 
-                        emoji: "�",
+                        emoji: "🎲", // Changed from empty string to dice emoji
                         svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Z"></path></svg>`,
                         text: "Freedom until I randomly change everything.", points: { moodDice: 3, chaosCreator: 1 } },
                     { 
@@ -1335,7 +1337,7 @@
                         text: "Only when I'm in a good mood.", desc: "Feedback availability depends on my emotional state.", points: { moodDice: 3 } },
                     { 
                         emoji: "🔍", // Fallback emoji
-                        svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M164.85,164.85a8,8,0,0,1-11.31,11.31l-48-48a8,8,0,0,1,11.31-11.31ZM229.66,218.34l-48-48a8,8,0,0,0-11.32,11.32l48,48a8,8,0,0,0,11.32-11.32ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,1,112,184Zm0-128a56,56,0,1,1-56,56A56.06,56.06,0,0,1,112,56Z"></path></svg>`,
+                        svgIcon: `<svg class="answer-icon-svg" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M164.85,164.85a8,8,0,0,1-11.31,11.31l-48-48a8,8,0,0,1,11.31-11.31ZM229.66,218.34l-48-48a8,8,0,0,0-11.32,11.32l48,48a8,8,0,0,0,11.32-11.32ZM112,184a72,72,0,1,0-72-72A72.08,72.08,0,0,0,112,184Zm0-128a56,56,0,1,1-56,56A56.06,56.06,0,0,1,112,56Z"></path></svg>`,
                         text: "Nitpicking tiny details.", desc: "Missing the forest for the trees.", points: { micromanager: 3 } }
                 ]
             }
@@ -1481,55 +1483,70 @@
         }
 
         function calculateBossType() {
-        recalculateScores();
+            recalculateScores();
 
-        let maxBadScore = 0;
-        let badBossResultType = null;
-        let totalBadScore = 0; // NEW: Initialize total bad score
+            let maxBadScore = 0;
+            let badBossResultType = null;
+            let totalBadScore = 0;
 
-        for (const [type, score] of Object.entries(bossScores)) {
-            if (type !== 'good') {
-                totalBadScore += score; // Accumulate all bad scores
-                if (score > maxBadScore) {
-                    maxBadScore = score;
-                    badBossResultType = type;
+            for (const [type, score] of Object.entries(bossScores)) {
+                if (type !== 'good') {
+                    totalBadScore += score;
+                    if (score > maxBadScore) {
+                        maxBadScore = score;
+                        badBossResultType = type;
+                    }
                 }
             }
+
+            const goodBossScore = bossScores['good'] || 0;
+
+            // Decision Logic Priorities:
+
+            // 1. If a single bad archetype is highly dominant
+            // This threshold ensures a clear "bad" result if a strong pattern emerges.
+            if (badBossResultType && maxBadScore >= QuizConfig.DOMINANT_BAD_THRESHOLD) {
+                return badBossResultType;
+            }
+
+            // 2. If the user is truly a "good" boss (very high good score AND low total bad score)
+            if (goodBossScore >= QuizConfig.VERY_GOOD_THRESHOLD && totalBadScore < QuizConfig.MODERATELY_BAD_THRESHOLD) {
+                return 'good';
+            }
+
+            // 3. If there's significant overall bad behavior (even if no single type dominates)
+            if (totalBadScore >= QuizConfig.MODERATELY_BAD_THRESHOLD) {
+                // Return the most dominant bad type, or a random one if maxBadScore is very low (e.g., 1 or 2)
+                if (badBossResultType) {
+                    return badBossResultType;
+                } else {
+                    // Fallback to a common bad type if maxBadScore was 0 but totalBadScore somehow high (unlikely)
+                    const commonBadBossTypes = Object.keys(BossTypesData).filter(type => type !== 'good');
+                    return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
+                }
+            }
+
+            // 4. If good score is present but not "very good", and bad scores are low.
+            // This is a "decent" but not outstanding boss, or a "mixed" boss.
+            // If good score is higher than max bad score, but didn't hit VERY_GOOD_THRESHOLD,
+            // AND total bad score is low, then it's still 'good' or 'decent'.
+            if (goodBossScore > maxBadScore && totalBadScore < QuizConfig.MODERATELY_BAD_THRESHOLD) {
+                return 'good';
+            }
+
+            // Final Fallback: If none of the above conditions are met.
+            // This could mean:
+            // - Good score is low or zero.
+            // - No dominant bad archetype.
+            // - Total bad score is low.
+            // In this scenario, it's likely a "bad" boss who just spreads their badness thinly, or a very neutral one.
+            // Given the user's feedback, we should lean towards a bad type here.
+            if (badBossResultType) { // If there's any bad score at all
+                return badBossResultType;
+            } else { // If goodBossScore is low/zero, and totalBadScore is zero (no bad answers selected)
+                return 'good'; // This implies they chose no bad answers, but also not enough good ones to be 'very good'.
+            }
         }
-
-        const goodBossScore = bossScores['good'] || 0;
-
-        // Priority 1: If good score is clearly dominant AND meets high threshold
-        // This is the primary good path.
-        if (goodBossScore >= QuizConfig.GOOD_BOSS_THRESHOLD && goodBossScore > maxBadScore) {
-            return 'good';
-        }
-
-        // Priority 2: If a specific bad archetype is clearly dominant and meets its minimum threshold
-        // This catches strong negative archetypes.
-        if (badBossResultType && maxBadScore >= QuizConfig.MIN_BAD_BOSS_SCORE) {
-            return badBossResultType;
-        }
-
-        // NEW Priority 3: If total bad score is significant, but no single type dominates, or individual types are below MIN_BAD_BOSS_SCORE.
-        // This catches "generally bad" bosses who spread their badness.
-        const TOTAL_BAD_SCORE_THRESHOLD = 8; // Adjust this value. Example: 8 points spread across bad types.
-        if (totalBadScore >= TOTAL_BAD_SCORE_THRESHOLD) {
-            // If we have a 'badBossResultType' (even if below MIN_BAD_BOSS_SCORE), we might default to it,
-            // or we could use the commonBadBossTypes randomizer if we want to obscure a specific low-score bad type.
-            // For now, let's use the randomizer as a fallback for "general badness."
-            const commonBadBossTypes = ['micromanager', 'creditShark', 'volcano'];
-            return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
-        }
-
-
-        // Final Fallback: If not good, not strongly bad, and not significantly bad overall.
-        // This means scores are very low for both good and bad, or primarily in the 'good' range but not meeting the high threshold.
-        // You might want to make this always return *a* bad type if they didn't hit 'good'.
-        // For now, it will use your existing random bad type.
-        const commonBadBossTypes = ['micromanager', 'creditShark', 'volcano'];
-        return commonBadBossTypes[Math.floor(Math.random() * commonBadBossTypes.length)];
-    }
 
         function populateBossGalleryAccordions(currentQuizResultType) {
             const container = document.getElementById('boss-types-accordion-container');
