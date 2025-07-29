@@ -189,9 +189,14 @@
             transition: max-height 0.3s ease-in-out;
             padding-top: 0;
             padding-bottom: 0;
+            /* Add this to allow vertical scrolling within the content if it exceeds available space */
+            overflow-y: auto;
         }
         .archetype-accordion-content.expanded {
-            max-height: 1000px; /* Sufficiently large for content */
+            /* Change max-height to a larger value or 'max-content' or 'none' */
+            /* 'max-content' is ideal for fitting content, but transitions can be tricky with it */
+            /* A very large pixel value like 2000px or 3000px is a common workaround for smoother transitions */
+            max-height: 3000px; /* Increased from 1000px to a much larger value */
             padding-top: 1rem;
             padding-bottom: 1rem;
         }
